@@ -732,6 +732,10 @@ class _AddSeriesPageState extends State<AddSeriesPage> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
+                    // ตรวจทุกช่องในฟอร์มก่อน เพื่อให้ช่องที่เว้นว่างแสดง
+                    final isFormValid = _formKey.currentState!.validate();
+                    if (!isFormValid) return;
+
                     if (_selectedImage.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -741,18 +745,16 @@ class _AddSeriesPageState extends State<AddSeriesPage> {
                       return;
                     }
 
-                    if (_formKey.currentState!.validate()) {
-                      final newSeries = SeriesItem(
-                        id: widget.existing?.id,
-                        title: _titleController.text.trim(),
-                        content: _contentController.text.trim(),
-                        date: _selectedDate.toString().substring(0, 10),
-                        rating: _selectedRating,
-                        image: _selectedImage,
-                      );
+                    final newSeries = SeriesItem(
+                      id: widget.existing?.id,
+                      title: _titleController.text.trim(),
+                      content: _contentController.text.trim(),
+                      date: _selectedDate.toString().substring(0, 10),
+                      rating: _selectedRating,
+                      image: _selectedImage,
+                    );
 
-                      Navigator.pop(context, newSeries);
-                    }
+                    Navigator.pop(context, newSeries);
                   },
                   child: const Text('บันทึก'),
                 ),
