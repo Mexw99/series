@@ -1,23 +1,100 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
+
+import 'database_helper.dart';
 
 void main() => runApp(const MyApp());
 
 // แม่พิมพ์ข้อมูลซีรีส์
 class SeriesItem {
+  final int? id;
   final String title;
   final String content;
   final String date;
   final double rating;
   final String image;
 
-  SeriesItem({
+  const SeriesItem({
+    this.id,
     required this.title,
     required this.content,
     required this.date,
     required this.rating,
     required this.image,
   });
+
+  // แปลง object → Map สำหรับ SQLite
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'content': content,
+      'date': date,
+      'rating': rating,
+      'image': image,
+    };
+  }
+
+  // แปลง Map จาก SQLite → object
+  factory SeriesItem.fromMap(Map<String, dynamic> map) {
+    return SeriesItem(
+      id: map['id'],
+      title: map['title'],
+      content: map['content'],
+      date: map['date'],
+      rating: (map['rating'] as num).toDouble(),
+      image: map['image'] ?? '',
+    );
+  }
 }
+
+// // ข้อมูลซีรีส์เริ่มต้นจากสัปดาห์ที่ 1
+// final List<SeriesItem> seriesList = [
+//   SeriesItem(
+//     title: 'Queen of Tears',
+//     content: 'ซีรีส์โรแมนติกดราม่าที่อยากดู เพราะกระแสดีและนักแสดงน่าสนใจ',
+//     date: '2025-06-10',
+//     rating: 4.8,
+//     image:
+//         'https://raw.githubusercontent.com/Mexw99/series/main/series/assets/images/queen_of_tears.jpg',
+//   ),
+//   SeriesItem(
+//     title: 'Moving',
+//     content: 'ซีรีส์แนวพลังพิเศษ แอ็กชัน และครอบครัว เนื้อเรื่องดูเข้มข้นมาก',
+//     date: '2025-06-12',
+//     rating: 4.7,
+//     image:
+//         'https://raw.githubusercontent.com/Mexw99/series/main/series/assets/images/moving.jpg',
+//   ),
+//   SeriesItem(
+//     title: 'The Glory',
+//     content: 'ซีรีส์ดราม่าแก้แค้นที่หลายคนแนะนำ เนื้อเรื่องดูน่าติดตาม',
+//     date: '2025-06-14',
+//     rating: 4.9,
+//     image:
+//         'https://raw.githubusercontent.com/Mexw99/series/main/series/assets/images/the_glory.jpg',
+//   ),
+//   SeriesItem(
+//     title: 'Business Proposal',
+//     content: 'ซีรีส์โรแมนติกคอมเมดี้ ดูเบาสบาย เหมาะกับวันพักผ่อน',
+//     date: '2025-06-16',
+//     rating: 4.5,
+//     image:
+//         'https://raw.githubusercontent.com/Mexw99/series/main/series/assets/images/business_proposal.jpg',
+//   ),
+//   SeriesItem(
+//     title: 'All of Us Are Dead',
+//     content: 'ซีรีส์ซอมบี้ในโรงเรียน น่าดูเพราะลุ้นและตื่นเต้น',
+//     date: '2025-06-18',
+//     rating: 4.6,
+//     image:
+//         'https://raw.githubusercontent.com/Mexw99/series/main/series/assets/images/all_of_us_are_dead.jpg',
+//   ),
+// ];
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -82,94 +159,273 @@ class _MainPageState extends State<MainPage> {
 }
 
 // หน้ารายการซีรีส์
-class SeriesListPage extends StatelessWidget {
+class SeriesListPage extends StatefulWidget {
   const SeriesListPage({super.key});
 
   @override
+  State<SeriesListPage> createState() => _SeriesListPageState();
+}
+
+class _SeriesListPageState extends State<SeriesListPage> {
+  List<SeriesItem> _seriesList = [];
+  String _searchQuery = '';
+
+  final List<Color> colors = [
+    Colors.pink,
+    Colors.purple,
+    Colors.orange,
+    Colors.teal,
+    Colors.green,
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSeries();
+  }
+
+  // โหลดข้อมูลจาก SQLite
+  Future<void> _loadSeries() async {
+    try {
+      final data = await DatabaseHelper.getAll();
+
+      if (!mounted) return;
+
+      setState(() {
+        _seriesList = data;
+      });
+    } catch (error) {
+      _showDatabaseError(error);
+    }
+  }
+
+  // เพิ่มซีรีส์ลง SQLite
+  Future<void> _addSeries(SeriesItem item) async {
+    try {
+      await DatabaseHelper.insert(item);
+      await _loadSeries();
+    } catch (error) {
+      _showDatabaseError(error);
+    }
+  }
+
+  // แก้ไขซีรีส์ใน SQLite
+  Future<void> _updateSeries(SeriesItem item) async {
+    try {
+      await DatabaseHelper.update(item);
+      await _loadSeries();
+    } catch (error) {
+      _showDatabaseError(error);
+    }
+  }
+
+  // ลบซีรีส์จาก SQLite
+  Future<void> _deleteSeries(int id) async {
+    try {
+      await DatabaseHelper.delete(id);
+      await _loadSeries();
+    } catch (error) {
+      _showDatabaseError(error);
+    }
+  }
+
+  List<SeriesItem> get filteredSeries {
+    final query = _searchQuery.trim().toLowerCase();
+
+    if (query.isEmpty) return _seriesList;
+
+    return _seriesList.where((item) {
+      return item.title.toLowerCase().contains(query);
+    }).toList();
+  }
+
+  void _showDatabaseError(Object error) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('จัดการข้อมูลไม่สำเร็จ: $error')));
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final List<SeriesItem> seriesList = [
-      SeriesItem(
-        title: 'Queen of Tears',
-        content: 'ซีรีส์โรแมนติกดราม่าที่อยากดู เพราะกระแสดีและนักแสดงน่าสนใจ',
-        date: '10 มิ.ย. 2568',
-        rating: 4.8,
-        image: 'assets/images/queen_of_tears.jpg',
-      ),
-      SeriesItem(
-        title: 'Moving',
-        content:
-            'ซีรีส์แนวพลังพิเศษ แอ็กชัน และครอบครัว เนื้อเรื่องดูเข้มข้นมาก',
-        date: '12 มิ.ย. 2568',
-        rating: 4.7,
-        image: 'assets/images/moving.jpg',
-      ),
-      SeriesItem(
-        title: 'The Glory',
-        content: 'ซีรีส์ดราม่าแก้แค้นที่หลายคนแนะนำ เนื้อเรื่องดูน่าติดตาม',
-        date: '14 มิ.ย. 2568',
-        rating: 4.9,
-        image: 'assets/images/the_glory.jpg',
-      ),
-      SeriesItem(
-        title: 'Business Proposal',
-        content: 'ซีรีส์โรแมนติกคอมเมดี้ ดูเบาสบาย เหมาะกับวันพักผ่อน',
-        date: '16 มิ.ย. 2568',
-        rating: 4.5,
-        image:
-            'https://m.media-amazon.com/images/M/MV5BYWM2NTM4MTktNDFiNi00NTI3LThiZTgtZmJiZTQ2NzdhNDE3XkEyXkFqcGc@._V1_.jpg',
-      ),
-      SeriesItem(
-        title: 'All of Us Are Dead',
-        content: 'ซีรีส์ซอมบี้ในโรงเรียน น่าดูเพราะลุ้นและตื่นเต้น',
-        date: '18 มิ.ย. 2568',
-        rating: 4.6,
-        image: 'assets/images/all_of_us_are_dead.jpg',
-      ),
-    ];
-
-    final List<Color> colors = [
-      Colors.pink,
-      Colors.purple,
-      Colors.orange,
-      Colors.teal,
-      Colors.green,
-    ];
-
     return Scaffold(
-      appBar: AppBar(title: const Text('ซีรีส์ที่อยากดู')),
-      body: ListView.builder(
-        itemCount: seriesList.length,
-        itemBuilder: (context, i) {
-          return Card(
-            color: colors[i % colors.length].withValues(alpha: 0.50),
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: ListTile(
-              leading: Icon(Icons.movie, color: colors[i % colors.length]),
-              title: Text(seriesList[i].title),
-              subtitle: Text(
-                '${seriesList[i].date} • ${seriesList[i].rating} ดาว',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+      appBar: AppBar(title: Text('ซีรีส์ที่อยากดู (${_seriesList.length})')),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'ค้นหาชื่อซีรีส์...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchQuery.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          setState(() {
+                            _searchQuery = '';
+                          });
+                        },
+                      ),
+                border: const OutlineInputBorder(),
               ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        SeriesDetailPage(series: seriesList[i]),
-                  ),
-                );
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
               },
             ),
-          );
-        },
+          ),
+          Expanded(
+            child: _seriesList.isEmpty
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.movie_outlined,
+                          size: 80,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'ยังไม่มีซีรีส์',
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'กดปุ่ม + เพื่อเพิ่มซีรีส์เรื่องแรก',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  )
+                : filteredSeries.isEmpty
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.search_off, size: 80, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text(
+                          'ไม่พบซีรีส์ที่ค้นหา',
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: filteredSeries.length,
+                    itemBuilder: (context, i) {
+                      final item = filteredSeries[i];
+
+                      return Card(
+                        color: colors[i % colors.length].withValues(
+                          alpha: 0.50,
+                        ),
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        child: ListTile(
+                          leading: Icon(
+                            Icons.movie,
+                            color: colors[i % colors.length],
+                          ),
+                          title: Text(item.title),
+                          subtitle: Text(
+                            '${item.date} • ${item.rating} ดาว\n${item.content}',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.edit,
+                                  color: Colors.blue,
+                                ),
+                                onPressed: () async {
+                                  final result = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          AddSeriesPage(existing: item),
+                                    ),
+                                  );
+
+                                  if (result != null && result is SeriesItem) {
+                                    await _updateSeries(result);
+                                  }
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () async {
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (ctx) => AlertDialog(
+                                      title: const Text('ลบซีรีส์?'),
+                                      content: Text(
+                                        'ต้องการลบ "${item.title}" ใช่ไหม',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(ctx, false),
+                                          child: const Text('ยกเลิก'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(ctx, true),
+                                          child: const Text(
+                                            'ลบ',
+                                            style: TextStyle(color: Colors.red),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+
+                                  if (confirm == true && item.id != null) {
+                                    await _deleteSeries(item.id!);
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    SeriesDetailPage(series: item),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('ฟีเจอร์เพิ่มซีรีส์ มาสัปดาห์หน้า!')),
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddSeriesPage()),
           );
+
+          if (result != null && result is SeriesItem) {
+            await _addSeries(result);
+          }
         },
         child: const Icon(Icons.add),
       ),
@@ -200,33 +456,7 @@ class SeriesDetailPage extends StatelessWidget {
                     width: 220,
                     child: AspectRatio(
                       aspectRatio: 2 / 3,
-                      child: series.image.startsWith('http')
-                          ? Image.network(
-                              series.image,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: Colors.grey.shade300,
-                                  child: const Icon(
-                                    Icons.broken_image,
-                                    size: 60,
-                                  ),
-                                );
-                              },
-                            )
-                          : Image.asset(
-                              series.image,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: Colors.grey.shade300,
-                                  child: const Icon(
-                                    Icons.broken_image,
-                                    size: 60,
-                                  ),
-                                );
-                              },
-                            ),
+                      child: _buildSeriesImage(series.image),
                     ),
                   ),
                 ),
@@ -259,6 +489,273 @@ class SeriesDetailPage extends StatelessWidget {
               Text(
                 series.content,
                 style: const TextStyle(fontSize: 16, height: 1.6),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Widget _buildSeriesImage(String image) {
+  if (image.isEmpty) {
+    return Container(
+      color: Colors.grey.shade300,
+      child: const Icon(Icons.movie, size: 60, color: Colors.grey),
+    );
+  }
+
+  return Image.file(File(image), fit: BoxFit.cover);
+}
+
+// หน้าฟอร์มเพิ่มและแก้ไขซีรีส์
+class AddSeriesPage extends StatefulWidget {
+  final SeriesItem? existing;
+
+  const AddSeriesPage({super.key, this.existing});
+
+  @override
+  State<AddSeriesPage> createState() => _AddSeriesPageState();
+}
+
+class _AddSeriesPageState extends State<AddSeriesPage> {
+  final _formKey = GlobalKey<FormState>();
+
+  final _titleController = TextEditingController();
+  final _contentController = TextEditingController();
+  String _selectedImage = '';
+
+  // Dropdown คะแนน
+  double _selectedRating = 5.0;
+
+  final List<double> _ratings = [1.0, 2.0, 3.0, 4.0, 4.5, 5.0];
+
+  // DatePicker
+  DateTime _selectedDate = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+
+    // ถ้าเป็นโหมดแก้ไข ให้แสดงข้อมูลเดิม
+    if (widget.existing != null) {
+      _titleController.text = widget.existing!.title;
+      _contentController.text = widget.existing!.content;
+      _selectedImage = widget.existing!.image;
+      _selectedRating = widget.existing!.rating;
+
+      _selectedDate =
+          DateTime.tryParse(widget.existing!.date) ?? DateTime.now();
+    }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _contentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final result = await FilePicker.pickFile(type: FileType.image);
+
+      if (result == null || result.path == null) return;
+
+      final appDirectory = await getApplicationDocumentsDirectory();
+      final imageDirectory = Directory(
+        path.join(appDirectory.path, 'series_images'),
+      );
+      await imageDirectory.create(recursive: true);
+
+      final extension = path.extension(result.name);
+      final fileName =
+          'series_${DateTime.now().microsecondsSinceEpoch}$extension';
+      final savedFile = await File(
+        result.path!,
+      ).copy(path.join(imageDirectory.path, fileName));
+
+      if (!mounted) return;
+
+      setState(() {
+        _selectedImage = savedFile.path;
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('เลือกรูปภาพไม่สำเร็จ: $error')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          widget.existing == null ? 'เพิ่มซีรีส์ใหม่' : 'แก้ไขข้อมูลซีรีส์',
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              // ช่องกรอกชื่อซีรีส์
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'ชื่อซีรีส์',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.movie),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'กรุณากรอกชื่อซีรีส์';
+                  }
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              // ช่องกรอกเรื่องย่อ
+              TextFormField(
+                controller: _contentController,
+                maxLines: 5,
+                decoration: const InputDecoration(
+                  labelText: 'เรื่องย่อหรือความรู้สึก',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.description),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'กรุณากรอกเรื่องย่อหรือความรู้สึก';
+                  }
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              // Dropdown เลือกคะแนน
+              DropdownButtonFormField<double>(
+                initialValue: _selectedRating,
+                decoration: const InputDecoration(
+                  labelText: 'คะแนนซีรีส์',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.star),
+                ),
+                items: _ratings.map((rating) {
+                  return DropdownMenuItem<double>(
+                    value: rating,
+                    child: Text('$rating ดาว'),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _selectedRating = value;
+                    });
+                  }
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              // DatePicker
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.calendar_today),
+                title: Text(
+                  'วันที่: ${_selectedDate.toString().substring(0, 10)}',
+                ),
+                trailing: const Icon(Icons.edit),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _selectedDate,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2030),
+                  );
+
+                  if (picked != null) {
+                    setState(() {
+                      _selectedDate = picked;
+                    });
+                  }
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              // รูปภาพจากไฟล์เครื่อง
+              Container(
+                height: 180,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: _selectedImage.isEmpty
+                    ? const Center(
+                        child: Icon(
+                          Icons.image_outlined,
+                          size: 60,
+                          color: Colors.grey,
+                        ),
+                      )
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: _buildSeriesImage(_selectedImage),
+                      ),
+              ),
+
+              const SizedBox(height: 12),
+
+              OutlinedButton.icon(
+                onPressed: _pickImage,
+                icon: const Icon(Icons.photo_library),
+                label: Text(
+                  _selectedImage.isEmpty
+                      ? 'เลือกรูปภาพจากเครื่อง'
+                      : 'เปลี่ยนรูปภาพ',
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (_selectedImage.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('กรุณาเลือกรูปภาพจากเครื่อง'),
+                        ),
+                      );
+                      return;
+                    }
+
+                    if (_formKey.currentState!.validate()) {
+                      final newSeries = SeriesItem(
+                        id: widget.existing?.id,
+                        title: _titleController.text.trim(),
+                        content: _contentController.text.trim(),
+                        date: _selectedDate.toString().substring(0, 10),
+                        rating: _selectedRating,
+                        image: _selectedImage,
+                      );
+
+                      Navigator.pop(context, newSeries);
+                    }
+                  },
+                  child: const Text('บันทึก'),
+                ),
               ),
             ],
           ),
