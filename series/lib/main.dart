@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
+import 'api_service.dart';
 import 'database_helper.dart';
 
 void main() => runApp(const MyApp());
@@ -169,6 +170,9 @@ class SeriesListPage extends StatefulWidget {
 class _SeriesListPageState extends State<SeriesListPage> {
   List<SeriesItem> _seriesList = [];
   String _searchQuery = '';
+  late Future<Quote> _quoteFuture;
+  late Future<SeriesRecommendation> _recommendationFuture;
+  int? _lastRecommendationId;
 
   final List<Color> colors = [
     Colors.pink,
@@ -181,7 +185,26 @@ class _SeriesListPageState extends State<SeriesListPage> {
   @override
   void initState() {
     super.initState();
+    _loadOnlineData();
     _loadSeries();
+  }
+
+  void _loadOnlineData() {
+    _quoteFuture = ApiService.fetchQuote();
+    final recommendationFuture = ApiService.fetchSeriesRecommendation(
+      excludeId: _lastRecommendationId,
+    );
+    _recommendationFuture = recommendationFuture;
+    recommendationFuture.then((recommendation) {
+      if (!mounted || !identical(_recommendationFuture, recommendationFuture)) {
+        return;
+      }
+      _lastRecommendationId = recommendation.id;
+    }, onError: (_) {});
+  }
+
+  void _refreshOnlineData() {
+    setState(_loadOnlineData);
   }
 
   // โหลดข้อมูลจาก SQLite
@@ -247,10 +270,51 @@ class _SeriesListPageState extends State<SeriesListPage> {
     ).showSnackBar(SnackBar(content: Text('จัดการข้อมูลไม่สำเร็จ: $error')));
   }
 
+  Future<void> _saveRecommendation(SeriesRecommendation recommendation) async {
+    try {
+      final now = DateTime.now();
+      final date =
+          '${now.year.toString().padLeft(4, '0')}-'
+          '${now.month.toString().padLeft(2, '0')}-'
+          '${now.day.toString().padLeft(2, '0')}';
+      final genres = recommendation.genres.join(' • ');
+      final content = genres.isEmpty
+          ? recommendation.summary
+          : '$genres\n${recommendation.summary}';
+
+      await DatabaseHelper.insert(
+        SeriesItem(
+          title: recommendation.title,
+          content: content,
+          date: date,
+          rating: recommendation.rating,
+          image: recommendation.imageUrl,
+        ),
+      );
+      await _loadSeries();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('เพิ่ม ${recommendation.title} ลงรายการแล้ว')),
+      );
+    } catch (error) {
+      _showDatabaseError(error);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('ซีรีส์ที่อยากดู (${_seriesList.length})')),
+      appBar: AppBar(
+        title: Text('ซีรีส์ที่อยากดู (${_seriesList.length})'),
+        actions: [
+          IconButton(
+            onPressed: _refreshOnlineData,
+            tooltip: 'โหลดข้อมูลออนไลน์ใหม่',
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Padding(
@@ -277,6 +341,224 @@ class _SeriesListPageState extends State<SeriesListPage> {
                 });
               },
             ),
+          ),
+          FutureBuilder<Quote>(
+            future: _quoteFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: CircularProgressIndicator(),
+                );
+              }
+
+              if (snapshot.hasError || !snapshot.hasData) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'โหลดคำคมไม่ได้ ตรวจสอบอินเทอร์เน็ต',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _refreshOnlineData,
+                        child: const Text('ลองใหม่'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              final quote = snapshot.data!;
+              return Card(
+                margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+                color: const Color(0xFFFFF1F5),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  child: Column(
+                    children: [
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.format_quote, color: Colors.pink, size: 20),
+                          SizedBox(width: 4),
+                          Text(
+                            'แรงบันดาลใจวันนี้',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '"${quote.text}"',
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontStyle: FontStyle.italic,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '— ${quote.author}',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          FutureBuilder<SeriesRecommendation>(
+            future: _recommendationFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: LinearProgressIndicator(),
+                );
+              }
+
+              if (snapshot.hasError || !snapshot.hasData) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'โหลดซีรีส์แนะนำไม่ได้',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _refreshOnlineData,
+                        child: const Text('ลองใหม่'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              final recommendation = snapshot.data!;
+              return Card(
+                margin: const EdgeInsets.fromLTRB(12, 4, 12, 6),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: SizedBox(
+                          width: 56,
+                          height: 80,
+                          child: recommendation.imageUrl.isEmpty
+                              ? const ColoredBox(
+                                  color: Color(0xFFEDEDED),
+                                  child: Icon(Icons.movie, color: Colors.grey),
+                                )
+                              : Image.network(
+                                  recommendation.imageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const ColoredBox(
+                                        color: Color(0xFFEDEDED),
+                                        child: Icon(
+                                          Icons.broken_image,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'ซีรีส์แนะนำจากอินเทอร์เน็ต',
+                              style: TextStyle(
+                                color: Colors.pink,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              recommendation.title,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            if (recommendation.rating > 0)
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.star,
+                                    size: 14,
+                                    color: Colors.orange,
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    '${recommendation.rating} / 10',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            const SizedBox(height: 2),
+                            Text(
+                              recommendation.summary.isEmpty
+                                  ? 'ยังไม่มีเรื่องย่อ'
+                                  : recommendation.summary,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            OutlinedButton.icon(
+                              onPressed: () =>
+                                  _saveRecommendation(recommendation),
+                              icon: const Icon(Icons.add),
+                              label: const Text(
+                                'เพิ่มลงรายการ',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: Size.zero,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
           Expanded(
             child: _seriesList.isEmpty
@@ -503,6 +785,17 @@ Widget _buildSeriesImage(String image) {
     return Container(
       color: Colors.grey.shade300,
       child: const Icon(Icons.movie, size: 60, color: Colors.grey),
+    );
+  }
+
+  if (image.startsWith('http://') || image.startsWith('https://')) {
+    return Image.network(
+      image,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => Container(
+        color: Colors.grey.shade300,
+        child: const Icon(Icons.broken_image, size: 60, color: Colors.grey),
+      ),
     );
   }
 
