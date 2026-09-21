@@ -17,4 +17,20 @@ void main() {
     expect(find.textContaining('ซีรีส์ที่อยากดู'), findsOneWidget);
     expect(find.byIcon(Icons.add), findsOneWidget);
   });
+
+  testWidgets('can edit an API series with a decimal rating', (tester) async {
+    final series = SeriesItem(
+      id: 1,
+      title: 'Under the Dome',
+      content: 'Drama',
+      date: '2026-09-20',
+      rating: 7.4,
+      image: '',
+    );
+
+    await tester.pumpWidget(MaterialApp(home: AddSeriesPage(existing: series)));
+
+    expect(find.text('7.4 คะแนน'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

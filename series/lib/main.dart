@@ -354,7 +354,10 @@ class _SeriesListPageState extends State<SeriesListPage> {
 
               if (snapshot.hasError || !snapshot.hasData) {
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   child: Row(
                     children: [
                       const Expanded(
@@ -386,7 +389,11 @@ class _SeriesListPageState extends State<SeriesListPage> {
                       const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.format_quote, color: Colors.pink, size: 20),
+                          Icon(
+                            Icons.format_quote,
+                            color: Colors.pink,
+                            size: 20,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             'แรงบันดาลใจวันนี้',
@@ -434,7 +441,10 @@ class _SeriesListPageState extends State<SeriesListPage> {
 
               if (snapshot.hasError || !snapshot.hasData) {
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   child: Row(
                     children: [
                       const Expanded(
@@ -618,7 +628,7 @@ class _SeriesListPageState extends State<SeriesListPage> {
                           ),
                           title: Text(item.title),
                           subtitle: Text(
-                            '${item.date} • ${item.rating} ดาว\n${item.content}',
+                            '${item.date} • ${item.rating} / 10 ดาว\n${item.content}',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -762,7 +772,7 @@ class SeriesDetailPage extends StatelessWidget {
                   const Icon(Icons.star, color: Colors.orange),
                   const SizedBox(width: 6),
                   Text(
-                    '${series.rating} / 5.0',
+                    '${series.rating} / 10 คะแนน',
                     style: const TextStyle(fontSize: 16),
                   ),
                 ],
@@ -822,7 +832,17 @@ class _AddSeriesPageState extends State<AddSeriesPage> {
   // Dropdown คะแนน
   double _selectedRating = 5.0;
 
-  final List<double> _ratings = [1.0, 2.0, 3.0, 4.0, 4.5, 5.0];
+  List<double> get _ratings {
+    final ratings = List<double>.generate(
+      101,
+      (index) => double.parse((index / 10).toStringAsFixed(1)),
+    );
+    if (!ratings.contains(_selectedRating)) {
+      ratings.add(_selectedRating);
+      ratings.sort();
+    }
+    return ratings;
+  }
 
   // DatePicker
   DateTime _selectedDate = DateTime.now();
@@ -938,14 +958,14 @@ class _AddSeriesPageState extends State<AddSeriesPage> {
               DropdownButtonFormField<double>(
                 initialValue: _selectedRating,
                 decoration: const InputDecoration(
-                  labelText: 'คะแนนซีรีส์',
+                  labelText: 'คะแนนซีรีส์ (เต็ม 10)',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.star),
                 ),
                 items: _ratings.map((rating) {
                   return DropdownMenuItem<double>(
                     value: rating,
-                    child: Text('$rating ดาว'),
+                    child: Text('$rating คะแนน'),
                   );
                 }).toList(),
                 onChanged: (value) {

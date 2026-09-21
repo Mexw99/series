@@ -1,0 +1,55 @@
+flutter pub get
+หน้าที่คือบันทึก version จริงของ package ที่ติดตั้ง เช่น:
+- http
+- file_picker
+- android_file_picker
+- sqflite
+
+
+[AndroidManifest.xml](/Users/bootsabong/Documents/GitHub/series/series/android/app/src/main/AndroidManifest.xml)
+เพิ่ม:
+<uses-permission android:name="android.permission.INTERNET"/>
+บรรทัดนี้อนุญาตให้ APK เชื่อมต่ออินเทอร์เน็ตได้
+    ถ้าไม่มี permission นี้:
+    - ตอนรันบนเครื่องพัฒนาอาจดูเหมือนใช้งานได้
+    - แต่ APK ที่ build แล้วอาจเรียก API ไม่ได้
+    - คำคมและซีรีส์แนะนำจะโหลดไม่สำเร็จ
+ต้องวางไว้เหนือ <application>:
+<manifest>
+    <uses-permission .../>
+    <application>
+
+
+fromJson() ทำหน้าที่เปลี่ยน JSON ให้กลายเป็น object Quote ที่ Flutter ใช้งานได้
+
+
+11. macOS Entitlements
+ไฟล์:
+- [DebugProfile.entitlements](/Users/bootsabong/Documents/GitHub/series/series/macos/Runner/DebugProfile.entitlements)
+- [Release.entitlements](/Users/bootsabong/Documents/GitHub/series/series/macos/Runner/Release.entitlements)
+เพิ่ม:
+<key>com.apple.security.network.client</key>
+<true/>
+ใช้อนุญาตให้แอป macOS เชื่อมต่ออินเทอร์เน็ตได้
+Android ใช้ AndroidManifest.xml
+macOS ใช้ .entitlements
+
+
+12. android/gradle.properties
+ไฟล์:
+[gradle.properties](/Users/bootsabong/Documents/GitHub/series/series/android/gradle.properties)
+เพิ่ม locale:
+-Duser.language=en
+-Duser.country=US
+สาเหตุคือเครื่องใช้ locale ไทย ทำให้ Gradle อ่านปีเป็น พ.ศ. เช่น 2569
+แต่ Android ZIP merger รองรับปี ค.ศ. ในช่วงประมาณ 1980–2107 จึงเกิด error:
+VerifyException
+การตั้งค่า locale นี้มีผลเฉพาะขั้นตอน build ไม่ได้เปลี่ยนภาษาในแอป
+
+
+รันคำสั่งนี้ในโฟลเดอร์ Flutter ที่มี pubspec.yaml อยู่ เช่น series/series:
+flutter pub add http
+คำสั่งนี้จะเพิ่ม package http ใน pubspec.yaml และดาวน์โหลด dependency ให้อัตโนมัติ
+ส่วน Internet permission ไม่มีคำสั่ง Flutter สำหรับเพิ่มให้อัตโนมัติ ต้องเปิด android/app/src/main/AndroidManifest.xml แล้วใส่บรรทัดนี้ไว้เหนือ <application>:
+<uses-permission android:name="android.permission.INTERNET"/>
+บันทึกไฟล์แล้ว build แอปใหม่ครับ.
