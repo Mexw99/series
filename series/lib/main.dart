@@ -1,14 +1,22 @@
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
 import 'api_service.dart';
 import 'database_helper.dart';
+import 'firebase_options.dart';
+import 'firestore_series.dart';
+import 'login_page.dart';
 
-void main() => runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  runApp(const MyApp());
+}
 
 // แม่พิมพ์ข้อมูลซีรีส์
 class SeriesItem {
@@ -122,7 +130,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const MainPage(),
+      home: const AuthGate(),
     );
   }
 }
@@ -137,7 +145,11 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = [const SeriesListPage(), const AboutPage()];
+  final List<Widget> _pages = [
+    const SeriesListPage(),
+    const FirestoreSeriesPage(),
+    const AboutPage(),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -152,6 +164,10 @@ class _MainPageState extends State<MainPage> {
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.movie), label: 'ซีรีส์'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.cloud),
+            label: 'ซีรีส์ที่ดูแล้ว',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.info), label: 'เกี่ยวกับ'),
         ],
       ),

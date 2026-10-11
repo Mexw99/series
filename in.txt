@@ -53,3 +53,51 @@ flutter pub add http
 ส่วน Internet permission ไม่มีคำสั่ง Flutter สำหรับเพิ่มให้อัตโนมัติ ต้องเปิด android/app/src/main/AndroidManifest.xml แล้วใส่บรรทัดนี้ไว้เหนือ <application>:
 <uses-permission android:name="android.permission.INTERNET"/>
 บันทึกไฟล์แล้ว build แอปใหม่ครับ.
+
+
+ขั้นที่ 1 เปลี่ยนชื่อแอป
+เป้าหมาย: เปลี่ยนชื่อที่แสดงใต้ไอคอนบนมือถือ
+
+เปิด android/app/src/main/AndroidManifest.xml หาบรรทัด android:label:
+
+<application
+    android:label="MyDiary"          <!-- เปลี่ยนตรงนี้เป็นชื่อที่ต้องการ -->
+    ...>
+
+ขั้น 1 ติดตั้ง package สร้างไอคอน:
+
+flutter pub add dev:flutter_launcher_icons
+ขั้น 2 เพิ่มการตั้งค่าใน pubspec.yaml (ท้ายไฟล์)
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon.png"      # ที่อยู่รูปไอคอน
+ขั้น 3 เพิ่ม assets ใน pubspec.yaml (ใต้ flutter:) ถ้ามี flutter: อยู่แล้วให้เพิ่ม assets เข้าไปไม่ต้องเพิ่มใหม่
+
+flutter:
+  assets:
+    - assets/icon.png
+
+
+
+flutter clean
+flutter pub get
+flutter run --release -d macos
+
+
+flutter build apk --release
+JAVA_TOOL_OPTIONS='-Duser.language=en -Duser.country=US -Duser.variant=' flutter build apk --release
+
+
+!!!!!!!!!!!!!!
+ให้อัปเดต Flutter ก่อน:
+flutter channel stable
+flutter upgrade
+flutter --version
+ตรวจให้เวอร์ชันเป็น 3.47.x หรือใหม่กว่า เพราะ Flutter 3.47 เพิ่มการรองรับ Xcode 27 แล้ว (Flutter 3.47 release notes)
+จากนั้นรันในโฟลเดอร์โปรเจกต์:
+cd /Users/bootsabong/Documents/GitHub/MyDiary/diary
+flutter clean
+flutter pub get
+flutter run --release -d macos
