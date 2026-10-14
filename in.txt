@@ -85,6 +85,9 @@ flutter clean
 flutter pub get
 flutter run --release -d macos
 
+cd /Users/bootsabong/Documents/GitHub/MyDiary/diary
+flutter clean
+flutter build apk --release
 
 flutter build apk --release
 JAVA_TOOL_OPTIONS='-Duser.language=en -Duser.country=US -Duser.variant=' flutter build apk --release
