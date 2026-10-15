@@ -16,6 +16,18 @@ npm start
 เมื่อ deploy จริง ให้กำหนด `DATABASE_URL` ของ Supabase ใน Environment Variables
 ของ Render เพื่อให้ข้อมูลเก็บใน PostgreSQL ออนไลน์
 
+การเพิ่มข้อมูลผ่าน `POST /api/series` ต้องส่ง Firebase ID Token มาด้วย
+โดยกำหนด Environment Variables บน Render เพิ่มอีก 3 ตัว:
+
+```text
+FIREBASE_PROJECT_ID
+FIREBASE_CLIENT_EMAIL
+FIREBASE_PRIVATE_KEY
+```
+
+server จะตรวจ Token และตรวจว่า `ownerId` ในข้อมูลตรงกับ UID ของผู้ใช้จริง
+ก่อนบันทึกข้อมูล
+
 ## Endpoint ที่ใช้ในแอป
 
 ```text

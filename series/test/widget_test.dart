@@ -12,7 +12,8 @@ import 'package:series/main.dart';
 
 void main() {
   testWidgets('renders the series home page', (tester) async {
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const MaterialApp(home: SeriesListPage()));
+    await tester.pump();
 
     expect(find.textContaining('ซีรีส์ที่อยากดู'), findsOneWidget);
     expect(find.byIcon(Icons.add), findsOneWidget);

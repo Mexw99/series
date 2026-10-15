@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 
 const database = require('./database');
+const {requireFirebaseUser} = require('./firebase_auth_middleware');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -43,10 +44,16 @@ app.get('/api/series/:id', async (req, res, next) => {
   }
 });
 
-app.post('/api/series', async (req, res, next) => {
+app.post('/api/series', requireFirebaseUser, async (req, res, next) => {
   try {
     if (!validateSeries(req.body)) {
       return res.status(400).json({message: 'ข้อมูลซีรีส์ไม่ครบ'});
+    }
+
+    if (req.body.ownerId !== req.firebaseUser.uid) {
+      return res.status(403).json({
+        message: 'ownerId ไม่ตรงกับผู้ใช้ที่เข้าสู่ระบบ',
+      });
     }
 
     const item = await database.createSeries(normalizeSeries(req.body));

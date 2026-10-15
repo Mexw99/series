@@ -11,6 +11,7 @@ import 'database_helper.dart';
 import 'firebase_options.dart';
 import 'firestore_series.dart';
 import 'login_page.dart';
+import 'rest_api_series_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -147,6 +148,7 @@ class _MainPageState extends State<MainPage> {
 
   final List<Widget> _pages = [
     const SeriesListPage(),
+    const RestApiSeriesPage(),
     const FirestoreSeriesPage(),
     const AboutPage(),
   ];
@@ -157,6 +159,12 @@ class _MainPageState extends State<MainPage> {
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: const Color(0xFFFFF7FA),
+        selectedItemColor: const Color.fromARGB(255, 200, 0, 73),
+        unselectedItemColor: const Color(0xFF6B5B63),
+        selectedFontSize: 12,
+        unselectedFontSize: 12,
         onTap: (index) {
           setState(() {
             _selectedIndex = index;
@@ -164,6 +172,7 @@ class _MainPageState extends State<MainPage> {
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.movie), label: 'ซีรีส์'),
+          BottomNavigationBarItem(icon: Icon(Icons.public), label: 'ออนไลน์'),
           BottomNavigationBarItem(
             icon: Icon(Icons.cloud),
             label: 'ซีรีส์ที่ดูแล้ว',
