@@ -274,7 +274,7 @@ class _EmptyState extends StatelessWidget {
           Icon(Icons.cloud_queue, size: 72, color: Colors.grey),
           SizedBox(height: 12),
           Text('ยังไม่มีซีรีส์ใหม่ที่ยังไม่ออนแอร์'),
-          Text('กด “เพิ่มซีรีส์” เพื่อส่งข้อมูลด้วย POST'),
+          Text('กด “เพิ่มซีรีส์” เพื่อเพิ่มรายการใหม่'),
         ],
       ),
     );
