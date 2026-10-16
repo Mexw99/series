@@ -26,7 +26,7 @@ class _RestApiSeriesPageState extends State<RestApiSeriesPage> {
   }
 
   void _reloadSeries() {
-    _seriesFuture = RestApiService.getSeries(ownerId: _ownerId);
+    _seriesFuture = RestApiService.getSeries();
   }
 
   Future<void> _refreshSeries() async {
@@ -91,7 +91,7 @@ class _RestApiSeriesPageState extends State<RestApiSeriesPage> {
     if (confirmed != true || !mounted || series.id == null) return;
 
     try {
-      await RestApiService.deleteSeries(id: series.id!, ownerId: _ownerId);
+      await RestApiService.deleteSeries(id: series.id!);
       if (!mounted) return;
       setState(_reloadSeries);
       _showMessage('ลบซีรีส์ออนไลน์แล้ว');

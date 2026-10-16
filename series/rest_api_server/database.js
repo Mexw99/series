@@ -47,16 +47,18 @@ async function getAllSeries(ownerId) {
   return ownerId ? series.filter((item) => item.ownerId === ownerId) : series;
 }
 
-async function getSeriesById(id) {
+async function getSeriesById(id, ownerId) {
   if (usesPostgres) {
     const result = await pool.query(
-      'SELECT * FROM public.series WHERE id = $1',
-      [id],
+      'SELECT * FROM public.series WHERE id = $1 AND owner_id = $2',
+      [id, ownerId],
     );
     return result.rows[0] ? mapDatabaseRow(result.rows[0]) : null;
   }
 
-  return readLocalSeries().find((item) => item.id === id) || null;
+  return readLocalSeries().find(
+    (item) => item.id === id && item.ownerId === ownerId,
+  ) || null;
 }
 
 async function createSeries(data) {

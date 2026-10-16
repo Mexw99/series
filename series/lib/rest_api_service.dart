@@ -39,13 +39,11 @@ class RestApiService {
   }
 
   /// GET: อ่านซีรีส์ทั้งหมดของผู้ใช้จากเซิร์ฟเวอร์
-  static Future<List<RestSeriesItem>> getSeries({
-    required String ownerId,
-  }) async {
-    final uri = Uri.parse(
-      '$baseUrl/series',
-    ).replace(queryParameters: {'ownerId': ownerId});
-    final response = await http.get(uri, headers: await _headers());
+  static Future<List<RestSeriesItem>> getSeries() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/series'),
+      headers: await _headers(),
+    );
     _checkSuccess(response, expectedStatus: 200);
 
     final data = jsonDecode(response.body) as List<dynamic>;
@@ -89,14 +87,11 @@ class RestApiService {
   }
 
   /// DELETE: ลบซีรีส์ออกจากเซิร์ฟเวอร์
-  static Future<void> deleteSeries({
-    required int id,
-    required String ownerId,
-  }) async {
-    final uri = Uri.parse(
-      '$baseUrl/series/$id',
-    ).replace(queryParameters: {'ownerId': ownerId});
-    final response = await http.delete(uri, headers: await _headers());
+  static Future<void> deleteSeries({required int id}) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/series/$id'),
+      headers: await _headers(),
+    );
     _checkSuccess(response, expectedStatus: 204);
   }
 

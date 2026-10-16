@@ -25,18 +25,22 @@ function normalizeSeries(body) {
   };
 }
 
-app.get('/api/series', async (req, res, next) => {
+app.get('/api/series', requireFirebaseUser, async (req, res, next) => {
   try {
-    const series = await database.getAllSeries(req.query.ownerId);
+    // ใช้ UID จาก Firebase Token ไม่ใช้ ownerId จาก URL
+    const series = await database.getAllSeries(req.firebaseUser.uid);
     res.json(series);
   } catch (error) {
     next(error);
   }
 });
 
-app.get('/api/series/:id', async (req, res, next) => {
+app.get('/api/series/:id', requireFirebaseUser, async (req, res, next) => {
   try {
-    const item = await database.getSeriesById(Number(req.params.id));
+    const item = await database.getSeriesById(
+      Number(req.params.id),
+      req.firebaseUser.uid,
+    );
     if (!item) return res.status(404).json({message: 'ไม่พบซีรีส์'});
     res.json(item);
   } catch (error) {
@@ -63,10 +67,16 @@ app.post('/api/series', requireFirebaseUser, async (req, res, next) => {
   }
 });
 
-app.put('/api/series/:id', async (req, res, next) => {
+app.put('/api/series/:id', requireFirebaseUser, async (req, res, next) => {
   try {
     if (!validateSeries(req.body)) {
       return res.status(400).json({message: 'ข้อมูลซีรีส์ไม่ครบ'});
+    }
+
+    if (req.body.ownerId !== req.firebaseUser.uid) {
+      return res.status(403).json({
+        message: 'ownerId ไม่ตรงกับผู้ใช้ที่เข้าสู่ระบบ',
+      });
     }
 
     const item = await database.updateSeries(
@@ -82,11 +92,11 @@ app.put('/api/series/:id', async (req, res, next) => {
   }
 });
 
-app.delete('/api/series/:id', async (req, res, next) => {
+app.delete('/api/series/:id', requireFirebaseUser, async (req, res, next) => {
   try {
     const deleted = await database.deleteSeries(
       Number(req.params.id),
-      req.query.ownerId,
+      req.firebaseUser.uid,
     );
     if (!deleted) {
       return res.status(404).json({message: 'ไม่พบซีรีส์หรือไม่มีสิทธิ์ลบ'});
