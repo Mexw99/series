@@ -1,13 +1,14 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
+import 'firestore_series_detail_page.dart';
 import 'firestore_service.dart';
+import 'logout_button.dart';
 
 class FirestoreSeriesPage extends StatelessWidget {
   const FirestoreSeriesPage({super.key});
@@ -17,12 +18,7 @@ class FirestoreSeriesPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('ซีรีส์ที่ดูแล้ว'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => FirebaseAuth.instance.signOut(),
-          ),
-        ],
+        actions: const [LogoutButton()],
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: FirestoreService.getMySeries(),
@@ -49,6 +45,14 @@ class FirestoreSeriesPage extends StatelessWidget {
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: ListTile(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => FirestoreSeriesDetailPage(series: data),
+                      ),
+                    );
+                  },
                   leading: _seriesThumbnail(data['image'] ?? ''),
                   title: Text(data['title'] ?? ''),
                   subtitle: Text(
@@ -56,63 +60,65 @@ class FirestoreSeriesPage extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (value) async {
-                      if (value == 'edit') {
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => FirestoreSeriesFormPage(
-                              existing: {'docId': docId, ...data},
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        tooltip: 'แก้ไข',
+                        icon: const Icon(Icons.edit, color: Colors.blue),
+                        onPressed: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => FirestoreSeriesFormPage(
+                                existing: {'docId': docId, ...data},
+                              ),
                             ),
-                          ),
-                        );
-                        if (result is Map) {
-                          await FirestoreService.update(
-                            result['docId'],
-                            result['title'],
-                            result['content'],
-                            result['date'],
-                            result['rating'],
-                            result['image'],
                           );
-                        }
-                      }
-
-                      if (value == 'delete') {
-                        if (!context.mounted) return;
-
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('ลบซีรีส์?'),
-                            content: Text(
-                              'ต้องการลบ "${data['title'] ?? ''}" ใช่ไหม',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx, false),
-                                child: const Text('ยกเลิก'),
+                          if (result is Map) {
+                            await FirestoreService.update(
+                              result['docId'],
+                              result['title'],
+                              result['content'],
+                              result['date'],
+                              result['rating'],
+                              result['image'],
+                            );
+                          }
+                        },
+                      ),
+                      IconButton(
+                        tooltip: 'ลบ',
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('ลบซีรีส์?'),
+                              content: Text(
+                                'ต้องการลบ "${data['title'] ?? ''}" ใช่ไหม',
                               ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx, true),
-                                child: const Text(
-                                  'ลบ',
-                                  style: TextStyle(color: Colors.red),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('ยกเลิก'),
                                 ),
-                              ),
-                            ],
-                          ),
-                        );
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text(
+                                    'ลบ',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
 
-                        if (confirm == true) {
-                          await FirestoreService.delete(docId);
-                        }
-                      }
-                    },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'edit', child: Text('แก้ไข')),
-                      PopupMenuItem(value: 'delete', child: Text('ลบ')),
+                          if (confirm == true) {
+                            await FirestoreService.delete(docId);
+                          }
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -157,6 +163,12 @@ Widget _seriesThumbnail(String image) {
           ? Image.network(
               image,
               fit: BoxFit.cover,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                );
+              },
               errorBuilder: (context, error, stackTrace) =>
                   const _BrokenImage(),
             )
@@ -277,6 +289,7 @@ class _FirestoreSeriesFormPageState extends State<FirestoreSeriesFormPage> {
         title: Text(
           isEditing ? 'แก้ไขซีรีส์ที่ดูแล้ว' : 'เพิ่มซีรีส์ที่ดูแล้ว',
         ),
+        actions: const [LogoutButton()],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -351,7 +364,6 @@ class _FirestoreSeriesFormPageState extends State<FirestoreSeriesFormPage> {
                 },
               ),
               const SizedBox(height: 16),
-              // รูปภาพจากไฟล์เครื่อง เหมือนฟอร์มซีรีส์ที่อยากดู
               Container(
                 height: 180,
                 width: double.infinity,
@@ -427,6 +439,10 @@ Widget _buildSeriesImage(String image) {
     return Image.network(
       image,
       fit: BoxFit.cover,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+      },
       errorBuilder: (context, error, stackTrace) => const Center(
         child: Icon(Icons.broken_image, size: 60, color: Colors.grey),
       ),

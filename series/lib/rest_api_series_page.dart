@@ -1,12 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'logout_button.dart';
 import 'rest_api_service.dart';
 import 'rest_series_detail_page.dart';
 import 'rest_series_form_page.dart';
 import 'rest_series_model.dart';
 
-/// หน้าแยกสำหรับสาธิต CRUD ผ่าน REST API
 class RestApiSeriesPage extends StatefulWidget {
   const RestApiSeriesPage({super.key});
 
@@ -45,7 +45,7 @@ class _RestApiSeriesPageState extends State<RestApiSeriesPage> {
       await RestApiService.createSeries(result);
       if (!mounted) return;
       setState(_reloadSeries);
-      _showMessage('เพิ่มซีรีส์ออนไลน์แล้ว');
+      _showMessage('เพิ่มซีรีส์ใหม่ที่ยังไม่ออนแอร์แล้ว');
     } catch (error) {
       _showError(error);
     }
@@ -64,7 +64,7 @@ class _RestApiSeriesPageState extends State<RestApiSeriesPage> {
       await RestApiService.updateSeries(result);
       if (!mounted) return;
       setState(_reloadSeries);
-      _showMessage('แก้ไขซีรีส์ออนไลน์แล้ว');
+      _showMessage('แก้ไขซีรีส์ใหม่ที่ยังไม่ออนแอร์แล้ว');
     } catch (error) {
       _showError(error);
     }
@@ -74,7 +74,7 @@ class _RestApiSeriesPageState extends State<RestApiSeriesPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('ลบซีรีส์ออนไลน์?'),
+        title: const Text('ลบซีรีส์ใหม่ที่ยังไม่ออนแอร์?'),
         content: Text('ต้องการลบ “${series.title}” ใช่ไหม'),
         actions: [
           TextButton(
@@ -94,7 +94,7 @@ class _RestApiSeriesPageState extends State<RestApiSeriesPage> {
       await RestApiService.deleteSeries(id: series.id!);
       if (!mounted) return;
       setState(_reloadSeries);
-      _showMessage('ลบซีรีส์ออนไลน์แล้ว');
+      _showMessage('ลบซีรีส์ใหม่ที่ยังไม่ออนแอร์แล้ว');
     } catch (error) {
       _showError(error);
     }
@@ -107,22 +107,26 @@ class _RestApiSeriesPageState extends State<RestApiSeriesPage> {
   }
 
   void _showError(Object error) {
+    final message = error is RestApiException
+        ? error.message
+        : 'ขออภัย เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง';
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('REST API ทำงานไม่สำเร็จ: $error')));
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ซีรีส์ออนไลน์ (REST API)'),
+        title: const Text('ซีรีส์ใหม่ที่ยังไม่ออนแอร์'),
         actions: [
           IconButton(
             onPressed: _refreshSeries,
             tooltip: 'โหลดข้อมูลใหม่',
             icon: const Icon(Icons.refresh),
           ),
+          const LogoutButton(),
         ],
       ),
       body: FutureBuilder<List<RestSeriesItem>>(
@@ -134,7 +138,9 @@ class _RestApiSeriesPageState extends State<RestApiSeriesPage> {
 
           if (snapshot.hasError) {
             return _ErrorState(
-              message: '${snapshot.error}',
+              message: snapshot.error is RestApiException
+                  ? (snapshot.error! as RestApiException).message
+                  : 'ขออภัย เกิดข้อผิดพลาดในการโหลดข้อมูล\nกรุณาลองใหม่อีกครั้ง',
               onRetry: _refreshSeries,
             );
           }
@@ -195,19 +201,25 @@ class _SeriesCard extends StatelessWidget {
         leading: _Thumbnail(imageUrl: series.imageUrl),
         title: Text(series.title),
         subtitle: Text(
-          '${series.date} • ${series.rating.toStringAsFixed(1)} / 10\n'
+          '${series.date.split('T').first} • '
+          '${series.rating.toStringAsFixed(1)} / 10\n'
           '${series.content}',
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) {
-            if (value == 'edit') onEdit();
-            if (value == 'delete') onDelete();
-          },
-          itemBuilder: (_) => const [
-            PopupMenuItem(value: 'edit', child: Text('แก้ไข')),
-            PopupMenuItem(value: 'delete', child: Text('ลบ')),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: 'แก้ไข',
+              icon: const Icon(Icons.edit, color: Colors.blue),
+              onPressed: onEdit,
+            ),
+            IconButton(
+              tooltip: 'ลบ',
+              icon: const Icon(Icons.delete, color: Colors.red),
+              onPressed: onDelete,
+            ),
           ],
         ),
       ),
@@ -234,6 +246,12 @@ class _Thumbnail extends StatelessWidget {
         child: Image.network(
           imageUrl,
           fit: BoxFit.cover,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return const Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            );
+          },
           errorBuilder: (_, error, stackTrace) => const ColoredBox(
             color: Colors.grey,
             child: Icon(Icons.broken_image, color: Colors.white),
@@ -255,7 +273,7 @@ class _EmptyState extends StatelessWidget {
         children: [
           Icon(Icons.cloud_queue, size: 72, color: Colors.grey),
           SizedBox(height: 12),
-          Text('ยังไม่มีซีรีส์ออนไลน์'),
+          Text('ยังไม่มีซีรีส์ใหม่ที่ยังไม่ออนแอร์'),
           Text('กด “เพิ่มซีรีส์” เพื่อส่งข้อมูลด้วย POST'),
         ],
       ),

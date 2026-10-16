@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 
 import 'main.dart';
 
-// "ยาม" หน้าประตู: เช็คสถานะล็อกอินแล้วพาไปหน้าที่ถูก
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 

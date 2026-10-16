@@ -5,7 +5,6 @@ class FirestoreService {
   static final _series = FirebaseFirestore.instance.collection('series');
   static String get _uid => FirebaseAuth.instance.currentUser!.uid;
 
-  // CREATE: เพิ่มซีรีส์พร้อมผูกกับเจ้าของ
   static Future<void> add(
     String title,
     String content,
@@ -24,12 +23,10 @@ class FirestoreService {
     });
   }
 
-  // READ: อ่านเฉพาะซีรีส์ของผู้ใช้ที่กำลังล็อกอินแบบเรียลไทม์
   static Stream<QuerySnapshot<Map<String, dynamic>>> getMySeries() {
     return _series.where('userId', isEqualTo: _uid).snapshots();
   }
 
-  // UPDATE: แก้ไขข้อมูลซีรีส์
   static Future<void> update(
     String docId,
     String title,
@@ -47,7 +44,6 @@ class FirestoreService {
     });
   }
 
-  // DELETE: ลบซีรีส์
   static Future<void> delete(String docId) async {
     await _series.doc(docId).delete();
   }

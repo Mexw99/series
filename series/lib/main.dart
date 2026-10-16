@@ -11,100 +11,15 @@ import 'database_helper.dart';
 import 'firebase_options.dart';
 import 'firestore_series.dart';
 import 'login_page.dart';
+import 'logout_button.dart';
 import 'rest_api_series_page.dart';
+import 'series_item.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
-
-// แม่พิมพ์ข้อมูลซีรีส์
-class SeriesItem {
-  final int? id;
-  final String title;
-  final String content;
-  final String date;
-  final double rating;
-  final String image;
-
-  const SeriesItem({
-    this.id,
-    required this.title,
-    required this.content,
-    required this.date,
-    required this.rating,
-    required this.image,
-  });
-
-  // แปลง object → Map สำหรับ SQLite
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'title': title,
-      'content': content,
-      'date': date,
-      'rating': rating,
-      'image': image,
-    };
-  }
-
-  // แปลง Map จาก SQLite → object
-  factory SeriesItem.fromMap(Map<String, dynamic> map) {
-    return SeriesItem(
-      id: map['id'],
-      title: map['title'],
-      content: map['content'],
-      date: map['date'],
-      rating: (map['rating'] as num).toDouble(),
-      image: map['image'] ?? '',
-    );
-  }
-}
-
-// // ข้อมูลซีรีส์เริ่มต้นจากสัปดาห์ที่ 1
-// final List<SeriesItem> seriesList = [
-//   SeriesItem(
-//     title: 'Queen of Tears',
-//     content: 'ซีรีส์โรแมนติกดราม่าที่อยากดู เพราะกระแสดีและนักแสดงน่าสนใจ',
-//     date: '2025-06-10',
-//     rating: 4.8,
-//     image:
-//         'https://raw.githubusercontent.com/Mexw99/series/main/series/assets/images/queen_of_tears.jpg',
-//   ),
-//   SeriesItem(
-//     title: 'Moving',
-//     content: 'ซีรีส์แนวพลังพิเศษ แอ็กชัน และครอบครัว เนื้อเรื่องดูเข้มข้นมาก',
-//     date: '2025-06-12',
-//     rating: 4.7,
-//     image:
-//         'https://raw.githubusercontent.com/Mexw99/series/main/series/assets/images/moving.jpg',
-//   ),
-//   SeriesItem(
-//     title: 'The Glory',
-//     content: 'ซีรีส์ดราม่าแก้แค้นที่หลายคนแนะนำ เนื้อเรื่องดูน่าติดตาม',
-//     date: '2025-06-14',
-//     rating: 4.9,
-//     image:
-//         'https://raw.githubusercontent.com/Mexw99/series/main/series/assets/images/the_glory.jpg',
-//   ),
-//   SeriesItem(
-//     title: 'Business Proposal',
-//     content: 'ซีรีส์โรแมนติกคอมเมดี้ ดูเบาสบาย เหมาะกับวันพักผ่อน',
-//     date: '2025-06-16',
-//     rating: 4.5,
-//     image:
-//         'https://raw.githubusercontent.com/Mexw99/series/main/series/assets/images/business_proposal.jpg',
-//   ),
-//   SeriesItem(
-//     title: 'All of Us Are Dead',
-//     content: 'ซีรีส์ซอมบี้ในโรงเรียน น่าดูเพราะลุ้นและตื่นเต้น',
-//     date: '2025-06-18',
-//     rating: 4.6,
-//     image:
-//         'https://raw.githubusercontent.com/Mexw99/series/main/series/assets/images/all_of_us_are_dead.jpg',
-//   ),
-// ];
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -115,20 +30,32 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color.fromARGB(255, 200, 118, 147),
+          seedColor: const Color(0xFFE91E63),
           brightness: Brightness.light,
         ),
-        scaffoldBackgroundColor: const Color.fromARGB(255, 243, 243, 243),
+        scaffoldBackgroundColor: const Color(0xFFFFF7FA),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color.fromARGB(255, 246, 211, 221),
-          foregroundColor: Color.fromARGB(255, 200, 0, 73),
+          backgroundColor: Color(0xFFFFE0EB),
+          foregroundColor: Color(0xFFAD1457),
           centerTitle: true,
         ),
         cardTheme: const CardThemeData(
-          elevation: 1,
+          color: Colors.white,
+          elevation: 2,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(12)),
           ),
+        ),
+        inputDecorationTheme: const InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white,
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Color(0xFFE91E63), width: 2),
+          ),
+        ),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: Color(0xFFF8BBD0),
+          foregroundColor: Color(0xFF880E4F),
         ),
       ),
       home: const AuthGate(),
@@ -171,12 +98,12 @@ class _MainPageState extends State<MainPage> {
           });
         },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.movie), label: 'ซีรีส์'),
-          BottomNavigationBarItem(icon: Icon(Icons.public), label: 'ออนไลน์'),
+          BottomNavigationBarItem(icon: Icon(Icons.movie), label: 'อยากดู'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.cloud),
-            label: 'ซีรีส์ที่ดูแล้ว',
+            icon: Icon(Icons.public),
+            label: 'ยังไม่ออนแอร์',
           ),
+          BottomNavigationBarItem(icon: Icon(Icons.cloud), label: 'ดูแล้ว'),
           BottomNavigationBarItem(icon: Icon(Icons.info), label: 'เกี่ยวกับ'),
         ],
       ),
@@ -184,7 +111,6 @@ class _MainPageState extends State<MainPage> {
   }
 }
 
-// หน้ารายการซีรีส์
 class SeriesListPage extends StatefulWidget {
   const SeriesListPage({super.key});
 
@@ -195,16 +121,18 @@ class SeriesListPage extends StatefulWidget {
 class _SeriesListPageState extends State<SeriesListPage> {
   List<SeriesItem> _seriesList = [];
   String _searchQuery = '';
+  String _selectedCategory = 'ทั้งหมด';
+  bool _favoriteOnly = false;
   late Future<Quote> _quoteFuture;
   late Future<SeriesRecommendation> _recommendationFuture;
   int? _lastRecommendationId;
 
-  final List<Color> colors = [
-    Colors.pink,
-    Colors.purple,
-    Colors.orange,
-    Colors.teal,
-    Colors.green,
+  static const _cardColors = [
+    Color(0xFFFFD6E5),
+    Color(0xFFE8D7F1),
+    Color(0xFFFFE7C2),
+    Color(0xFFD9F2EE),
+    Color(0xFFE2F0CB),
   ];
 
   @override
@@ -232,7 +160,6 @@ class _SeriesListPageState extends State<SeriesListPage> {
     setState(_loadOnlineData);
   }
 
-  // โหลดข้อมูลจาก SQLite
   Future<void> _loadSeries() async {
     try {
       final data = await DatabaseHelper.getAll();
@@ -247,7 +174,6 @@ class _SeriesListPageState extends State<SeriesListPage> {
     }
   }
 
-  // เพิ่มซีรีส์ลง SQLite
   Future<void> _addSeries(SeriesItem item) async {
     try {
       await DatabaseHelper.insert(item);
@@ -257,7 +183,6 @@ class _SeriesListPageState extends State<SeriesListPage> {
     }
   }
 
-  // แก้ไขซีรีส์ใน SQLite
   Future<void> _updateSeries(SeriesItem item) async {
     try {
       await DatabaseHelper.update(item);
@@ -267,7 +192,6 @@ class _SeriesListPageState extends State<SeriesListPage> {
     }
   }
 
-  // ลบซีรีส์จาก SQLite
   Future<void> _deleteSeries(int id) async {
     try {
       await DatabaseHelper.delete(id);
@@ -280,10 +204,13 @@ class _SeriesListPageState extends State<SeriesListPage> {
   List<SeriesItem> get filteredSeries {
     final query = _searchQuery.trim().toLowerCase();
 
-    if (query.isEmpty) return _seriesList;
-
     return _seriesList.where((item) {
-      return item.title.toLowerCase().contains(query);
+      final matchesSearch = item.title.toLowerCase().contains(query);
+      final matchesCategory =
+          _selectedCategory == 'ทั้งหมด' || item.category == _selectedCategory;
+      final matchesFavorite = !_favoriteOnly || item.isFavorite;
+
+      return matchesSearch && matchesCategory && matchesFavorite;
     }).toList();
   }
 
@@ -296,34 +223,49 @@ class _SeriesListPageState extends State<SeriesListPage> {
   }
 
   Future<void> _saveRecommendation(SeriesRecommendation recommendation) async {
-    try {
-      final now = DateTime.now();
-      final date =
-          '${now.year.toString().padLeft(4, '0')}-'
-          '${now.month.toString().padLeft(2, '0')}-'
-          '${now.day.toString().padLeft(2, '0')}';
-      final genres = recommendation.genres.join(' • ');
-      final content = genres.isEmpty
-          ? recommendation.summary
-          : '$genres\n${recommendation.summary}';
+    final now = DateTime.now();
+    final date =
+        '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+    final genres = recommendation.genres.join(' • ');
+    final content = genres.isEmpty
+        ? recommendation.summary
+        : '$genres\n${recommendation.summary}';
 
-      await DatabaseHelper.insert(
-        SeriesItem(
-          title: recommendation.title,
-          content: content,
-          date: date,
-          rating: recommendation.rating,
-          image: recommendation.imageUrl,
+    final result = await Navigator.push<SeriesItem>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddSeriesPage(
+          initial: SeriesItem(
+            title: recommendation.title,
+            content: content,
+            date: date,
+            rating: recommendation.rating,
+            image: recommendation.imageUrl,
+          ),
         ),
-      );
-      await _loadSeries();
+      ),
+    );
 
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('เพิ่ม ${recommendation.title} ลงรายการแล้ว')),
-      );
-    } catch (error) {
-      _showDatabaseError(error);
+    if (result == null || !mounted) return;
+
+    await _addSeries(result);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('เพิ่ม ${result.title} ลงรายการแล้ว')),
+    );
+  }
+
+  Future<void> _openAddSeries() async {
+    final result = await Navigator.push<SeriesItem>(
+      context,
+      MaterialPageRoute(builder: (_) => const AddSeriesPage()),
+    );
+
+    if (result != null && mounted) {
+      await _addSeries(result);
     }
   }
 
@@ -331,13 +273,26 @@ class _SeriesListPageState extends State<SeriesListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('ซีรีส์ที่อยากดู (${_seriesList.length})'),
+        title: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          transitionBuilder: (child, animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(scale: animation, child: child),
+            );
+          },
+          child: Text(
+            'ซีรีส์ที่อยากดู (${_seriesList.length})',
+            key: ValueKey(_seriesList.length),
+          ),
+        ),
         actions: [
           IconButton(
             onPressed: _refreshOnlineData,
             tooltip: 'โหลดข้อมูลออนไลน์ใหม่',
             icon: const Icon(Icons.refresh),
           ),
+          const LogoutButton(),
         ],
       ),
       body: Column(
@@ -365,6 +320,42 @@ class _SeriesListPageState extends State<SeriesListPage> {
                   _searchQuery = value;
                 });
               },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    initialValue: _selectedCategory,
+                    decoration: const InputDecoration(
+                      labelText: 'กรองตามหมวด',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: ['ทั้งหมด', ...seriesCategories].map((category) {
+                      return DropdownMenuItem(
+                        value: category,
+                        child: Text(category),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _selectedCategory = value);
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  avatar: const Icon(Icons.favorite, size: 18),
+                  label: const Text('โปรด'),
+                  selected: _favoriteOnly,
+                  onSelected: (value) {
+                    setState(() => _favoriteOnly = value);
+                  },
+                ),
+              ],
             ),
           ),
           FutureBuilder<Quote>(
@@ -508,6 +499,17 @@ class _SeriesListPageState extends State<SeriesListPage> {
                               : Image.network(
                                   recommendation.imageUrl,
                                   fit: BoxFit.cover,
+                                  loadingBuilder:
+                                      (context, child, loadingProgress) {
+                                        if (loadingProgress == null) {
+                                          return child;
+                                        }
+                                        return const Center(
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        );
+                                      },
                                   errorBuilder: (context, error, stackTrace) =>
                                       const ColoredBox(
                                         color: Color(0xFFEDEDED),
@@ -597,135 +599,141 @@ class _SeriesListPageState extends State<SeriesListPage> {
           ),
           Expanded(
             child: _seriesList.isEmpty
-                ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.movie_outlined,
-                          size: 80,
-                          color: Colors.grey,
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          'ยังไม่มีซีรีส์',
-                          style: TextStyle(fontSize: 18, color: Colors.grey),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'กดปุ่ม + เพื่อเพิ่มซีรีส์เรื่องแรก',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ],
-                    ),
+                ? _AnimatedEmptyState(
+                    icon: Icons.movie_outlined,
+                    title: 'ยังไม่มีซีรีส์',
+                    subtitle: 'เริ่มสร้างรายการของคุณได้เลย',
+                    actionLabel: 'เพิ่มซีรีส์เรื่องแรก',
+                    onAction: _openAddSeries,
                   )
                 : filteredSeries.isEmpty
-                ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.search_off, size: 80, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text(
-                          'ไม่พบซีรีส์ที่ค้นหา',
-                          style: TextStyle(fontSize: 18, color: Colors.grey),
-                        ),
-                      ],
-                    ),
+                ? const _AnimatedEmptyState(
+                    icon: Icons.search_off,
+                    title: 'ไม่พบซีรีส์ที่ค้นหา',
+                    subtitle: 'ลองเปลี่ยนคำค้นหาหรือหมวดหมู่',
                   )
                 : ListView.builder(
                     itemCount: filteredSeries.length,
                     itemBuilder: (context, i) {
                       final item = filteredSeries[i];
 
-                      return Card(
-                        color: colors[i % colors.length].withValues(
-                          alpha: 0.50,
-                        ),
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        child: ListTile(
-                          leading: Icon(
-                            Icons.movie,
-                            color: colors[i % colors.length],
+                      return TweenAnimationBuilder<double>(
+                        key: ValueKey(item.id ?? item.title),
+                        tween: Tween(begin: 0.0, end: 1.0),
+                        duration: Duration(milliseconds: 300 + (i * 80)),
+                        curve: Curves.easeOut,
+                        builder: (context, value, child) {
+                          return Opacity(
+                            opacity: value,
+                            child: Transform.translate(
+                              offset: Offset(0, 16 * (1 - value)),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: Card(
+                          color: _cardColors[i % _cardColors.length],
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
                           ),
-                          title: Text(item.title),
-                          subtitle: Text(
-                            '${item.date} • ${item.rating} / 10 ดาว\n${item.content}',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.edit,
-                                  color: Colors.blue,
-                                ),
-                                onPressed: () async {
-                                  final result = await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          AddSeriesPage(existing: item),
-                                    ),
-                                  );
-
-                                  if (result != null && result is SeriesItem) {
-                                    await _updateSeries(result);
-                                  }
-                                },
+                          child: ListTile(
+                            leading: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: SizedBox(
+                                width: 56,
+                                height: 72,
+                                child: _buildSeriesImage(item.image),
                               ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.delete,
-                                  color: Colors.red,
-                                ),
-                                onPressed: () async {
-                                  final confirm = await showDialog<bool>(
-                                    context: context,
-                                    builder: (ctx) => AlertDialog(
-                                      title: const Text('ลบซีรีส์?'),
-                                      content: Text(
-                                        'ต้องการลบ "${item.title}" ใช่ไหม',
+                            ),
+                            title: Text(item.title),
+                            subtitle: Text(
+                              '${item.category} • ${item.date} • '
+                              '${item.rating} / 10 ดาว\n${item.content}',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (item.isFavorite)
+                                  const Padding(
+                                    padding: EdgeInsets.only(right: 4),
+                                    child: Icon(
+                                      Icons.favorite,
+                                      color: Colors.pink,
+                                    ),
+                                  ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.edit,
+                                    color: Colors.blue,
+                                  ),
+                                  onPressed: () async {
+                                    final result = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            AddSeriesPage(existing: item),
                                       ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(ctx, false),
-                                          child: const Text('ยกเลิก'),
-                                        ),
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(ctx, true),
-                                          child: const Text(
-                                            'ลบ',
-                                            style: TextStyle(color: Colors.red),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
+                                    );
 
-                                  if (confirm == true && item.id != null) {
-                                    await _deleteSeries(item.id!);
-                                  }
-                                },
-                              ),
-                            ],
+                                    if (result != null &&
+                                        result is SeriesItem) {
+                                      await _updateSeries(result);
+                                    }
+                                  },
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                  ),
+                                  onPressed: () async {
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        title: const Text('ลบซีรีส์?'),
+                                        content: Text(
+                                          'ต้องการลบ "${item.title}" ใช่ไหม',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(ctx, false),
+                                            child: const Text('ยกเลิก'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(ctx, true),
+                                            child: const Text(
+                                              'ลบ',
+                                              style: TextStyle(
+                                                color: Colors.red,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+
+                                    if (confirm == true && item.id != null) {
+                                      await _deleteSeries(item.id!);
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      SeriesDetailPage(series: item),
+                                ),
+                              );
+                            },
                           ),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    SeriesDetailPage(series: item),
-                              ),
-                            );
-                          },
                         ),
                       );
                     },
@@ -734,23 +742,76 @@ class _SeriesListPageState extends State<SeriesListPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddSeriesPage()),
-          );
-
-          if (result != null && result is SeriesItem) {
-            await _addSeries(result);
-          }
-        },
+        onPressed: _openAddSeries,
         child: const Icon(Icons.add),
       ),
     );
   }
 }
 
-// หน้ารายละเอียดซีรีส์
+class _AnimatedEmptyState extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  const _AnimatedEmptyState({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.0, end: 1.0),
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOutBack,
+        builder: (context, value, child) {
+          final opacity = value.clamp(0.0, 1.0).toDouble();
+          return Opacity(
+            opacity: opacity,
+            child: Transform.scale(scale: 0.9 + (value * 0.1), child: child),
+          );
+        },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 72, color: const Color(0xFFD81B60)),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 19,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF880E4F),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Color(0xFF6D4C5B)),
+            ),
+            if (onAction != null && actionLabel != null) ...[
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: onAction,
+                icon: const Icon(Icons.playlist_add),
+                label: Text(actionLabel!),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class SeriesDetailPage extends StatelessWidget {
   final SeriesItem series;
 
@@ -759,7 +820,10 @@ class SeriesDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('รายละเอียดซีรีส์')),
+      appBar: AppBar(
+        title: const Text('รายละเอียดซีรีส์'),
+        actions: const [LogoutButton()],
+      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -802,7 +866,39 @@ class SeriesDetailPage extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Icon(Icons.category, color: Colors.purple),
+                  const SizedBox(width: 6),
+                  Text(
+                    'หมวดหมู่: ${series.category}',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(
+                    series.isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: Colors.pink,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    series.isFavorite
+                        ? 'รายการโปรด'
+                        : 'ยังไม่ได้เพิ่มเป็นรายการโปรด',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
               const Divider(height: 32),
+              const Text(
+                'เรื่องย่อหรือความรู้สึก',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
               Text(
                 series.content,
                 style: const TextStyle(fontSize: 16, height: 1.6),
@@ -827,6 +923,10 @@ Widget _buildSeriesImage(String image) {
     return Image.network(
       image,
       fit: BoxFit.cover,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+      },
       errorBuilder: (context, error, stackTrace) => Container(
         color: Colors.grey.shade300,
         child: const Icon(Icons.broken_image, size: 60, color: Colors.grey),
@@ -837,11 +937,11 @@ Widget _buildSeriesImage(String image) {
   return Image.file(File(image), fit: BoxFit.cover);
 }
 
-// หน้าฟอร์มเพิ่มและแก้ไขซีรีส์
 class AddSeriesPage extends StatefulWidget {
   final SeriesItem? existing;
+  final SeriesItem? initial;
 
-  const AddSeriesPage({super.key, this.existing});
+  const AddSeriesPage({super.key, this.existing, this.initial});
 
   @override
   State<AddSeriesPage> createState() => _AddSeriesPageState();
@@ -854,8 +954,9 @@ class _AddSeriesPageState extends State<AddSeriesPage> {
   final _contentController = TextEditingController();
   String _selectedImage = '';
 
-  // Dropdown คะแนน
   double _selectedRating = 5.0;
+  String _selectedCategory = 'ทั่วไป';
+  bool _isFavorite = false;
 
   List<double> get _ratings {
     final ratings = List<double>.generate(
@@ -869,22 +970,22 @@ class _AddSeriesPageState extends State<AddSeriesPage> {
     return ratings;
   }
 
-  // DatePicker
   DateTime _selectedDate = DateTime.now();
 
   @override
   void initState() {
     super.initState();
 
-    // ถ้าเป็นโหมดแก้ไข ให้แสดงข้อมูลเดิม
-    if (widget.existing != null) {
-      _titleController.text = widget.existing!.title;
-      _contentController.text = widget.existing!.content;
-      _selectedImage = widget.existing!.image;
-      _selectedRating = widget.existing!.rating;
+    final source = widget.existing ?? widget.initial;
+    if (source != null) {
+      _titleController.text = source.title;
+      _contentController.text = source.content;
+      _selectedImage = source.image;
+      _selectedRating = source.rating;
+      _selectedCategory = source.category;
+      _isFavorite = source.isFavorite;
 
-      _selectedDate =
-          DateTime.tryParse(widget.existing!.date) ?? DateTime.now();
+      _selectedDate = DateTime.tryParse(source.date) ?? DateTime.now();
     }
   }
 
@@ -935,6 +1036,7 @@ class _AddSeriesPageState extends State<AddSeriesPage> {
         title: Text(
           widget.existing == null ? 'เพิ่มซีรีส์ใหม่' : 'แก้ไขข้อมูลซีรีส์',
         ),
+        actions: const [LogoutButton()],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -942,7 +1044,6 @@ class _AddSeriesPageState extends State<AddSeriesPage> {
           key: _formKey,
           child: Column(
             children: [
-              // ช่องกรอกชื่อซีรีส์
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(
@@ -960,7 +1061,6 @@ class _AddSeriesPageState extends State<AddSeriesPage> {
 
               const SizedBox(height: 16),
 
-              // ช่องกรอกเรื่องย่อ
               TextFormField(
                 controller: _contentController,
                 maxLines: 5,
@@ -979,7 +1079,6 @@ class _AddSeriesPageState extends State<AddSeriesPage> {
 
               const SizedBox(height: 16),
 
-              // Dropdown เลือกคะแนน
               DropdownButtonFormField<double>(
                 initialValue: _selectedRating,
                 decoration: const InputDecoration(
@@ -1004,7 +1103,38 @@ class _AddSeriesPageState extends State<AddSeriesPage> {
 
               const SizedBox(height: 16),
 
-              // DatePicker
+              DropdownButtonFormField<String>(
+                initialValue: _selectedCategory,
+                decoration: const InputDecoration(
+                  labelText: 'หมวดหมู่',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.category),
+                ),
+                items: seriesCategories.map((category) {
+                  return DropdownMenuItem(
+                    value: category,
+                    child: Text(category),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _selectedCategory = value);
+                  }
+                },
+              ),
+
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('รายการโปรด'),
+                secondary: const Icon(Icons.favorite, color: Colors.pink),
+                value: _isFavorite,
+                onChanged: (value) {
+                  setState(() => _isFavorite = value);
+                },
+              ),
+
+              const SizedBox(height: 8),
+
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.calendar_today),
@@ -1030,7 +1160,6 @@ class _AddSeriesPageState extends State<AddSeriesPage> {
 
               const SizedBox(height: 16),
 
-              // รูปภาพจากไฟล์เครื่อง
               Container(
                 height: 180,
                 width: double.infinity,
@@ -1070,7 +1199,6 @@ class _AddSeriesPageState extends State<AddSeriesPage> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    // ตรวจทุกช่องในฟอร์มก่อน เพื่อให้ช่องที่เว้นว่างแสดง
                     final isFormValid = _formKey.currentState!.validate();
                     if (!isFormValid) return;
 
@@ -1090,6 +1218,8 @@ class _AddSeriesPageState extends State<AddSeriesPage> {
                       date: _selectedDate.toString().substring(0, 10),
                       rating: _selectedRating,
                       image: _selectedImage,
+                      category: _selectedCategory,
+                      isFavorite: _isFavorite,
                     );
 
                     Navigator.pop(context, newSeries);
@@ -1105,52 +1235,17 @@ class _AddSeriesPageState extends State<AddSeriesPage> {
   }
 }
 
-// class AboutPage extends StatelessWidget {
-//   const AboutPage({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(title: const Text('เกี่ยวกับ')),
-//       body: Center(
-//         child: Padding(
-//           padding: const EdgeInsets.all(24),
-//           child: Column(
-//             mainAxisAlignment: MainAxisAlignment.center,
-//             children: [
-//               const CircleAvatar(
-//                 // << รูปวงกลม (ใช้ไอคอนแทนรูปก่อน)
-//                 radius: 50,
-//                 backgroundColor: Color.fromARGB(255, 226, 17, 115),
-//                 child: Icon(Icons.movie, size: 50, color: Colors.white),
-//               ),
-//               const SizedBox(height: 20),
-//               const Text(
-//                 'My Series Watchlist',
-//                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-//               ),
-//               const SizedBox(height: 8),
-//               const Text('รายการซีรีส์ที่อยากดู'),
-//               const SizedBox(height: 4),
-//               const Text('สร้างโดย [Bootsabong Nakpan]'), // << ใส่ชื่อตัวเอง
-//               const Text('รหัสนักศึกษา [67011212042]'), // << ใส่รหัส
-//               const SizedBox(height: 16),
-//               const Text('เวอร์ชัน 1.0', style: TextStyle(color: Colors.grey)),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
-
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('เกี่ยวกับ'), centerTitle: true),
+      appBar: AppBar(
+        title: const Text('เกี่ยวกับ'),
+        centerTitle: true,
+        actions: const [LogoutButton()],
+      ),
       body: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(24),
@@ -1256,16 +1351,3 @@ class AboutPage extends StatelessWidget {
     );
   }
 }
-
-/*
-คำถามท้ายงาน
-
-1. ListView.builder กับการเขียน Column ใส่ Card ทีละอันเอง ต่างกันยังไง?
-ตอบ: ListView.builder เหมาะกับข้อมูลจำนวนมาก เพราะสร้างรายการตามจำนวนข้อมูลและเลื่อนได้ ส่วน Column ต้องเขียน Card เองทีละอัน ถ้าข้อมูลเยอะจะไม่สะดวกและอาจล้นหน้าจอ
-
-2. ตอนแตะรายการเพื่อเปิดหน้ารายละเอียด ข้อมูลถูกส่งไปหน้าใหม่ได้อย่างไร?
-ตอบ: ส่งข้อมูลผ่าน constructor ของหน้า SeriesDetailPage โดยใช้ Navigator.push และ MaterialPageRoute แล้วส่ง series: seriesList[i] ไปยังหน้ารายละเอียด
-
-3. ตอนนี้ถ้าอยากเพิ่มรายการใหม่ ต้องทำยังไง? สะดวกไหม?
-ตอบ: ตอนนี้ต้องเพิ่มข้อมูลเองในโค้ดตรง List seriesList ซึ่งยังไม่สะดวก สัปดาห์หน้าน่าจะทำหน้าฟอร์มเพิ่มข้อมูล และใช้ StatefulWidget เพื่อเพิ่ม ลบ หรือแก้ไขรายการได้จริง
-*/

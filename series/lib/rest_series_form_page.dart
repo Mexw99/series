@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'logout_button.dart';
 import 'rest_series_model.dart';
 
-/// ฟอร์มเพิ่มและแก้ไขข้อมูลซีรีส์บน REST API
 class RestSeriesFormPage extends StatefulWidget {
   final String ownerId;
   final RestSeriesItem? existing;
@@ -87,7 +87,12 @@ class _RestSeriesFormPageState extends State<RestSeriesFormPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'แก้ไขซีรีส์ออนไลน์' : 'เพิ่มซีรีส์ออนไลน์'),
+        title: Text(
+          _isEditing
+              ? 'แก้ไขซีรีส์ใหม่ที่ยังไม่ออนแอร์'
+              : 'เพิ่มซีรีส์ใหม่ที่ยังไม่ออนแอร์',
+        ),
+        actions: const [LogoutButton()],
       ),
       body: Form(
         key: _formKey,

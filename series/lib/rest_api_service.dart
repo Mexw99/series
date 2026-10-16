@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -5,7 +6,6 @@ import 'package:http/http.dart' as http;
 
 import 'rest_series_model.dart';
 
-/// ข้อผิดพลาดที่เกิดจาก REST API
 class RestApiException implements Exception {
   final String message;
 
@@ -15,10 +15,6 @@ class RestApiException implements Exception {
   String toString() => message;
 }
 
-/// ชั้นติดต่อเซิร์ฟเวอร์ของแท็บ “ซีรีส์ออนไลน์ (REST API)”
-///
-/// เปลี่ยน URL ตอนรันได้ เช่น:
-/// flutter run --dart-define=REST_API_BASE_URL=http://10.0.2.2:3000/api
 class RestApiService {
   static const String baseUrl = String.fromEnvironment(
     'REST_API_BASE_URL',
@@ -38,11 +34,27 @@ class RestApiService {
     };
   }
 
-  /// GET: อ่านซีรีส์ทั้งหมดของผู้ใช้จากเซิร์ฟเวอร์
+  static Future<http.Response> _send(
+    Future<http.Response> Function(Map<String, String> headers) request,
+  ) async {
+    try {
+      final headers = await _headers();
+      return await request(headers).timeout(const Duration(seconds: 60));
+    } on http.ClientException {
+      throw const RestApiException(
+        'ขออภัย ขณะนี้ยังเชื่อมต่อเซิร์ฟเวอร์ไม่ได้\n'
+        'กรุณาตรวจสอบอินเทอร์เน็ตแล้วกด “ลองใหม่” อีกครั้ง',
+      );
+    } on TimeoutException {
+      throw const RestApiException(
+        'ขออภัย เซิร์ฟเวอร์ตอบสนองช้า\nกรุณากด “ลองใหม่” อีกครั้ง',
+      );
+    }
+  }
+
   static Future<List<RestSeriesItem>> getSeries() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/series'),
-      headers: await _headers(),
+    final response = await _send(
+      (headers) => http.get(Uri.parse('$baseUrl/series'), headers: headers),
     );
     _checkSuccess(response, expectedStatus: 200);
 
@@ -53,12 +65,13 @@ class RestApiService {
         .toList();
   }
 
-  /// POST: เพิ่มซีรีส์ใหม่บนเซิร์ฟเวอร์
   static Future<RestSeriesItem> createSeries(RestSeriesItem item) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/series'),
-      headers: await _headers(),
-      body: jsonEncode(item.toJson()),
+    final response = await _send(
+      (headers) => http.post(
+        Uri.parse('$baseUrl/series'),
+        headers: headers,
+        body: jsonEncode(item.toJson()),
+      ),
     );
     _checkSuccess(response, expectedStatus: 201);
 
@@ -67,17 +80,18 @@ class RestApiService {
     );
   }
 
-  /// PUT: แทนที่ข้อมูลซีรีส์เดิมด้วยข้อมูลชุดใหม่
   static Future<RestSeriesItem> updateSeries(RestSeriesItem item) async {
     final id = item.id;
     if (id == null) {
       throw const RestApiException('ไม่พบรหัสซีรีส์ที่ต้องการแก้ไข');
     }
 
-    final response = await http.put(
-      Uri.parse('$baseUrl/series/$id'),
-      headers: await _headers(),
-      body: jsonEncode(item.toJson()),
+    final response = await _send(
+      (headers) => http.put(
+        Uri.parse('$baseUrl/series/$id'),
+        headers: headers,
+        body: jsonEncode(item.toJson()),
+      ),
     );
     _checkSuccess(response, expectedStatus: 200);
 
@@ -86,11 +100,10 @@ class RestApiService {
     );
   }
 
-  /// DELETE: ลบซีรีส์ออกจากเซิร์ฟเวอร์
   static Future<void> deleteSeries({required int id}) async {
-    final response = await http.delete(
-      Uri.parse('$baseUrl/series/$id'),
-      headers: await _headers(),
+    final response = await _send(
+      (headers) =>
+          http.delete(Uri.parse('$baseUrl/series/$id'), headers: headers),
     );
     _checkSuccess(response, expectedStatus: 204);
   }
@@ -105,9 +118,7 @@ class RestApiService {
     try {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       if (data['message'] is String) message = data['message'] as String;
-    } catch (_) {
-      // ใช้ข้อความเริ่มต้นเมื่อเซิร์ฟเวอร์ส่งคำตอบที่ไม่ใช่ JSON
-    }
+    } catch (_) {}
     throw RestApiException(message);
   }
 }

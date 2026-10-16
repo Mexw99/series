@@ -5,6 +5,7 @@ const { Pool } = require('pg');
 const dataFile = path.join(__dirname, 'data', 'series.json');
 const usesPostgres = Boolean(process.env.DATABASE_URL);
 
+// เชื่อมต่อ Supabase PostgreSQL เมื่อมี DATABASE_URL
 const pool = usesPostgres
   ? new Pool({
       connectionString: process.env.DATABASE_URL,
@@ -13,6 +14,7 @@ const pool = usesPostgres
     })
   : null;
 
+// แปลงชื่อคอลัมน์ของ PostgreSQL ให้เป็นรูปแบบที่แอปใช้
 function mapDatabaseRow(row) {
   return {
     id: Number(row.id),
@@ -25,6 +27,7 @@ function mapDatabaseRow(row) {
   };
 }
 
+// ใช้ไฟล์ JSON เป็นฐานข้อมูลสำรองเมื่อรันในเครื่อง
 function readLocalSeries() {
   return JSON.parse(fs.readFileSync(dataFile, 'utf8'));
 }
@@ -33,6 +36,9 @@ function writeLocalSeries(series) {
   fs.writeFileSync(dataFile, JSON.stringify(series, null, 2));
 }
 
+// -----------------------------------------------------------------------------
+// คำสั่ง CRUD สำหรับซีรีส์
+// -----------------------------------------------------------------------------
 async function getAllSeries(ownerId) {
   if (usesPostgres) {
     const values = ownerId ? [ownerId] : [];

@@ -1,4 +1,3 @@
-/// ข้อมูลซีรีส์ที่รับส่งระหว่างแอปกับ REST API
 class RestSeriesItem {
   final int? id;
   final String ownerId;

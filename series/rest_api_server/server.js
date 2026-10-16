@@ -25,6 +25,7 @@ function normalizeSeries(body) {
   };
 }
 
+// GET: อ่านเฉพาะข้อมูลของผู้ใช้ที่ล็อกอิน
 app.get('/api/series', requireFirebaseUser, async (req, res, next) => {
   try {
     // ใช้ UID จาก Firebase Token ไม่ใช้ ownerId จาก URL
@@ -35,6 +36,7 @@ app.get('/api/series', requireFirebaseUser, async (req, res, next) => {
   }
 });
 
+// GET: อ่านข้อมูลรายการเดียวของผู้ใช้ที่ล็อกอิน
 app.get('/api/series/:id', requireFirebaseUser, async (req, res, next) => {
   try {
     const item = await database.getSeriesById(
@@ -48,6 +50,7 @@ app.get('/api/series/:id', requireFirebaseUser, async (req, res, next) => {
   }
 });
 
+// POST: เพิ่มข้อมูล โดยตรวจ ownerId ให้ตรงกับ Firebase UID
 app.post('/api/series', requireFirebaseUser, async (req, res, next) => {
   try {
     if (!validateSeries(req.body)) {
@@ -67,6 +70,7 @@ app.post('/api/series', requireFirebaseUser, async (req, res, next) => {
   }
 });
 
+// PUT: แก้ไขข้อมูลของเจ้าของรายการเท่านั้น
 app.put('/api/series/:id', requireFirebaseUser, async (req, res, next) => {
   try {
     if (!validateSeries(req.body)) {
@@ -92,6 +96,7 @@ app.put('/api/series/:id', requireFirebaseUser, async (req, res, next) => {
   }
 });
 
+// DELETE: ลบข้อมูลของเจ้าของรายการเท่านั้น
 app.delete('/api/series/:id', requireFirebaseUser, async (req, res, next) => {
   try {
     const deleted = await database.deleteSeries(
@@ -107,6 +112,7 @@ app.delete('/api/series/:id', requireFirebaseUser, async (req, res, next) => {
   }
 });
 
+// ส่งข้อผิดพลาดที่ไม่คาดคิดกลับไปเป็น JSON
 app.use((error, req, res, next) => {
   console.error(error);
   res.status(500).json({message: 'เกิดข้อผิดพลาดที่ server'});

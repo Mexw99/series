@@ -2,6 +2,7 @@ const admin = require('firebase-admin');
 
 let firebaseApp;
 
+// สร้าง Firebase Admin ครั้งเดียวแล้วใช้ซ้ำทุก request
 function getFirebaseApp() {
   if (firebaseApp) return firebaseApp;
 
@@ -22,6 +23,7 @@ function getFirebaseApp() {
   return firebaseApp;
 }
 
+// ตรวจ Firebase ID Token ก่อนให้เข้า REST API
 async function requireFirebaseUser(req, res, next) {
   const app = getFirebaseApp();
   if (!app) {

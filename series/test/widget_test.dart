@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:series/main.dart';
+import 'package:series/series_item.dart';
 
 void main() {
   testWidgets('renders the series home page', (tester) async {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'logout_button.dart';
 import 'rest_series_model.dart';
 
-/// หน้าแสดงรายละเอียดของซีรีส์จาก REST API
 class RestSeriesDetailPage extends StatelessWidget {
   final RestSeriesItem series;
 
@@ -11,7 +11,10 @@ class RestSeriesDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('รายละเอียดซีรีส์ออนไลน์')),
+      appBar: AppBar(
+        title: const Text('รายละเอียดซีรีส์ใหม่ที่ยังไม่ออนแอร์'),
+        actions: const [LogoutButton()],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -23,7 +26,7 @@ class RestSeriesDetailPage extends StatelessWidget {
             children: [
               const Icon(Icons.calendar_today, size: 20),
               const SizedBox(width: 8),
-              Text(series.date),
+              Text(series.date.split('T').first),
               const SizedBox(width: 20),
               const Icon(Icons.star, size: 20, color: Colors.amber),
               const SizedBox(width: 8),
@@ -56,6 +59,12 @@ class _SeriesImage extends StatelessWidget {
         child: Image.network(
           imageUrl,
           fit: BoxFit.cover,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return const Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            );
+          },
           errorBuilder: (_, error, stackTrace) => _placeholder(),
         ),
       ),

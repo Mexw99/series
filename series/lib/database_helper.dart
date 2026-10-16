@@ -1,16 +1,16 @@
-import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'main.dart';
+import 'package:sqflite/sqflite.dart';
+
+import 'series_item.dart';
 
 class DatabaseHelper {
   static Database? _db;
 
-  // เปิดฐานข้อมูล
   static Future<Database> get database async {
     if (_db != null) return _db!;
 
     _db = await openDatabase(
-      join(await getDatabasesPath(), 'series_empty.db'),
+      join(await getDatabasesPath(), 'series_clean.db'),
       version: 1,
       onCreate: (db, version) async {
         await db.execute(
@@ -20,7 +20,9 @@ class DatabaseHelper {
           'content TEXT NOT NULL, '
           'date TEXT NOT NULL, '
           'rating REAL NOT NULL, '
-          'image TEXT NOT NULL)',
+          'image TEXT NOT NULL, '
+          "category TEXT NOT NULL DEFAULT 'ทั่วไป', "
+          'isFavorite INTEGER NOT NULL DEFAULT 0)',
         );
       },
     );
@@ -28,13 +30,11 @@ class DatabaseHelper {
     return _db!;
   }
 
-  // เพิ่มซีรีส์
   static Future<void> insert(SeriesItem item) async {
     final db = await database;
     await db.insert('series_items', item.toMap());
   }
 
-  // อ่านซีรีส์ทั้งหมด
   static Future<List<SeriesItem>> getAll() async {
     final db = await database;
     final maps = await db.query('series_items', orderBy: 'id DESC');
@@ -42,7 +42,6 @@ class DatabaseHelper {
     return maps.map((map) => SeriesItem.fromMap(map)).toList();
   }
 
-  // แก้ไขซีรีส์
   static Future<void> update(SeriesItem item) async {
     final db = await database;
 
@@ -54,7 +53,6 @@ class DatabaseHelper {
     );
   }
 
-  // ลบซีรีส์
   static Future<void> delete(int id) async {
     final db = await database;
 
