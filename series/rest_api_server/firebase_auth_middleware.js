@@ -1,8 +1,7 @@
-const admin = require('firebase-admin');
+const admin = require("firebase-admin");
 
 let firebaseApp;
 
-// สร้าง Firebase Admin ครั้งเดียวแล้วใช้ซ้ำทุก request
 function getFirebaseApp() {
   if (firebaseApp) return firebaseApp;
 
@@ -16,40 +15,39 @@ function getFirebaseApp() {
     credential: admin.credential.cert({
       projectId,
       clientEmail,
-      privateKey: privateKey.replace(/\\n/g, '\n'),
+      privateKey: privateKey.replace(/\\n/g, "\n"),
     }),
   });
 
   return firebaseApp;
 }
 
-// ตรวจ Firebase ID Token ก่อนให้เข้า REST API
 async function requireFirebaseUser(req, res, next) {
   const app = getFirebaseApp();
   if (!app) {
     return res.status(503).json({
-      message: 'ยังไม่ได้ตั้งค่า Firebase Admin บน server',
+      message: "ยังไม่ได้ตั้งค่า Firebase Admin บน server",
     });
   }
 
-  const authorization = req.get('Authorization') || '';
-  if (!authorization.startsWith('Bearer ')) {
+  const authorization = req.get("Authorization") || "";
+  if (!authorization.startsWith("Bearer ")) {
     return res.status(401).json({
-      message: 'กรุณาส่ง Firebase ID Token',
+      message: "กรุณาส่ง Firebase ID Token",
     });
   }
 
-  const idToken = authorization.substring('Bearer '.length).trim();
+  const idToken = authorization.substring("Bearer ".length).trim();
 
   try {
     req.firebaseUser = await admin.auth(app).verifyIdToken(idToken);
     return next();
   } catch (error) {
-    console.error('Firebase token verification failed:', error.message);
+    console.error("Firebase token verification failed:", error.message);
     return res.status(401).json({
-      message: 'Firebase ID Token ไม่ถูกต้องหรือหมดอายุ',
+      message: "Firebase ID Token ไม่ถูกต้องหรือหมดอายุ",
     });
   }
 }
 
-module.exports = {requireFirebaseUser};
+module.exports = { requireFirebaseUser };
